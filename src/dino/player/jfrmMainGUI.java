@@ -5,10 +5,9 @@
  */
 package dino.player;
 
-import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.logging.Level;
@@ -25,7 +24,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JFileChooser;
 
 import javax.swing.JTextField;
-import javax.swing.ListModel;
+
 import javax.swing.UIManager;
 
 /**
@@ -34,12 +33,14 @@ import javax.swing.UIManager;
  */
 public class jfrmMainGUI extends javax.swing.JFrame {
 
+    //Main Variables
     int iPlay;
     int iChangeSize;
     Clip audioClipComp;
     JTextField tName;
-    DefaultListModel agregarCancion = new DefaultListModel();
-    DefaultListModel agregarPath = new DefaultListModel();
+    DefaultListModel addSongtoList = new DefaultListModel();
+    DefaultListModel addPathtoList = new DefaultListModel();
+    File fFichero;
 
     /**
      * Creates new form jfrmMainGUI
@@ -66,6 +67,7 @@ public class jfrmMainGUI extends javax.swing.JFrame {
         jButton2 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
+        btnPlay = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -103,6 +105,14 @@ public class jfrmMainGUI extends javax.swing.JFrame {
         jLabel2.setText("Stop");
         getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 12, 40, 37));
 
+        btnPlay.setText("PlayButton");
+        btnPlay.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPlayActionPerformed(evt);
+            }
+        });
+        getContentPane().add(btnPlay, new org.netbeans.lib.awtextra.AbsoluteConstraints(680, 60, 190, -1));
+
         jMenu1.setText("File");
 
         jMenuItem1.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
@@ -123,14 +133,13 @@ public class jfrmMainGUI extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+    //Opens a File and add the File to a List
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        // TODO add your handling code here:
 
         JFileChooser Fc = new JFileChooser();
         int iSeleccion = Fc.showOpenDialog(jList1);
         if (iSeleccion == JFileChooser.APPROVE_OPTION) {//Si nuestro archivo es txt y lo seleccionamos el programa hara las instrucciones a dar
-            File fFichero = Fc.getSelectedFile();//Se Obtiene el archivo que se selecciono en nuestro file chooser
+            fFichero = Fc.getSelectedFile();//Se Obtiene el archivo que se selecciono en nuestro file chooser
             String sFile = fFichero.getName();
             if (sFile.contains("mp3")) {
                 try {
@@ -143,35 +152,7 @@ public class jfrmMainGUI extends javax.swing.JFrame {
                     System.out.println(e);
                 }
             } else if (sFile.contains(".wav")) {
-                try {
-                    if (iPlay > 0) {
-                        audioClipComp.close();
-
-                    }
-                    agregarCancion.addElement(fFichero.getName());
-                    agregarPath.addElement(fFichero.getAbsolutePath());
-                    agregarCancion.setElementAt(fFichero.getName(), iPlay);
-                    agregarPath.setElementAt(fFichero.getAbsolutePath(), iPlay);
-                    jList1.setModel(agregarCancion);
-                    jList2.setModel(agregarPath);
-
-                    AudioInputStream audioStream = AudioSystem.getAudioInputStream(fFichero.getAbsoluteFile());
-                    AudioFormat format = audioStream.getFormat();
-
-                    DataLine.Info info = new DataLine.Info(Clip.class, format);
-                    Clip audioClip = (Clip) AudioSystem.getLine(info);
-                    audioClipComp = audioClip;
-
-                    setTitle("Dino's Player Current Playing (" + fFichero.getName() + ")");
-
-                    audioClipComp.open(audioStream);
-                    audioClipComp.start();
-
-                    iPlay++;
-
-                } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
-                    Logger.getLogger(jfrmMainGUI.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                playandAddListofWAV16(fFichero);
             }
 
             /*
@@ -179,17 +160,19 @@ public class jfrmMainGUI extends javax.swing.JFrame {
              */
         }
     }//GEN-LAST:event_jMenuItem1ActionPerformed
-
+    //Opens a File From the list
     private void jList1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jList1MouseClicked
-        // TODO add your handling code here:
+        //IposSong == Position of the song
+        //PathName == Name of the file from a path
+        //getPath == The path of the song to open the song
         try {
             int iPosSong = jList1.getSelectedIndex();
-            String PathNombre = (String) agregarPath.getElementAt(iPosSong);
+            String PathName = (String) addPathtoList.getElementAt(iPosSong);
 
-            Path pathCancion = Paths.get(PathNombre);
-            File obtenerpath = pathCancion.toFile();
+            Path pathSong = Paths.get(PathName);
+            File getPath = pathSong.toFile();
 
-            if (PathNombre.contains(".mp3")) {
+            if (PathName.contains(".mp3")) {
                 try {
                     if (iPlay > 0) {
                         audioClipComp.close();
@@ -199,29 +182,9 @@ public class jfrmMainGUI extends javax.swing.JFrame {
                 } catch (Exception e) {
                     System.out.println(e);
                 }
-            } else if (PathNombre.contains(".wav")) {
-                try {
-                    if (iPlay > 0) {
-                        audioClipComp.close();
+            } else if (PathName.contains(".wav")) {
+                playFromaPositionofaListWAV16(getPath, iPosSong);
 
-                    }
-
-                    AudioInputStream audioStream;
-                    audioStream = AudioSystem.getAudioInputStream(obtenerpath);
-                    AudioFormat format = audioStream.getFormat();
-
-                    DataLine.Info info = new DataLine.Info(Clip.class, format);
-                    Clip audioClip = (Clip) AudioSystem.getLine(info);
-                    audioClipComp = audioClip;
-
-                    setTitle("Dino's Player Current Playing (" + agregarCancion.get(iPosSong) + ")");
-
-                    audioClipComp.open(audioStream);
-                    audioClipComp.start();
-
-                } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
-                    Logger.getLogger(jfrmMainGUI.class.getName()).log(Level.SEVERE, null, ex);
-                }
             }
 
         } catch (Exception e) {
@@ -229,6 +192,11 @@ public class jfrmMainGUI extends javax.swing.JFrame {
 
 
     }//GEN-LAST:event_jList1MouseClicked
+
+    private void btnPlayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPlayActionPerformed
+        // TODO add your handling code here:
+        playandAddListofWAV16(fFichero);
+    }//GEN-LAST:event_btnPlayActionPerformed
 
     /**
      * @param args the command line arguments
@@ -262,7 +230,73 @@ public class jfrmMainGUI extends javax.swing.JFrame {
         });
     }
 
+    public void playMP3() {
+    }
+
+    //Play a file from the list (the file has to e added to the list)
+    public void playFromaPositionofaListWAV16(File fPath, int iPosition) {
+        try {
+            if (iPlay > 0) {
+                audioClipComp.close();
+
+            }
+
+            AudioInputStream audioStream;
+            audioStream = AudioSystem.getAudioInputStream(fPath);
+            AudioFormat format = audioStream.getFormat();
+
+            DataLine.Info info = new DataLine.Info(Clip.class, format);
+            Clip audioClip = (Clip) AudioSystem.getLine(info);
+            audioClipComp = audioClip;
+
+            setTitle("Dino's Player Current Playing (" + addSongtoList.get(iPosition) + ")");
+
+            audioClipComp.open(audioStream);
+            audioClipComp.start();
+
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
+            Logger.getLogger(jfrmMainGUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    //Plays the file and add it to the list (File/File Path)
+    public void playandAddListofWAV16(File fPath) {
+        try {
+            if (iPlay > 0) {
+                audioClipComp.close();
+
+            }
+            addSongtoList.addElement(fPath.getName());
+            addPathtoList.addElement(fPath.getAbsolutePath());
+            addSongtoList.setElementAt(fPath.getName(), iPlay);
+            addPathtoList.setElementAt(fPath.getAbsolutePath(), iPlay);
+            jList1.setModel(addSongtoList);
+            jList2.setModel(addPathtoList);
+
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(fPath.getAbsoluteFile());
+            AudioFormat format = audioStream.getFormat();
+
+            DataLine.Info info = new DataLine.Info(Clip.class, format);
+            Clip audioClip = (Clip) AudioSystem.getLine(info);
+            audioClipComp = audioClip;
+
+            setTitle("Dino's Player Current Playing (" + fFichero.getName() + ")");
+
+            audioClipComp.open(audioStream);
+            audioClipComp.start();
+
+            iPlay++;
+
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
+            Logger.getLogger(jfrmMainGUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void playFLAC() {
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnPlay;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
